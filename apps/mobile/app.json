@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Neon TicTacToe Arena",
+    "slug": "neon-tictactoe-arena",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#090b18",
+      "resizeMode": "contain"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tictactoe.neonarena"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#090b18"
+      },
+      "package": "com.tictactoe.neonarena"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
