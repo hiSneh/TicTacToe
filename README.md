@@ -52,8 +52,8 @@ What each flag does:
 - `--web`: builds and starts/restarts the production web app with PM2 in daemon mode.
 - `--mobile`: type-checks mobile and prints EAS release commands. Mobile is not a PM2 server.
 - `--both`: runs the production web PM2 flow plus mobile release-readiness checks.
-- `--build`: runs tests, web production build, and mobile TypeScript build.
-- `--quick`: runs tests/builds, starts/restarts the production web app with PM2, prints mobile EAS release commands, and runs a final health check.
+- `--build`: runs web production checks and web build.
+- `--quick`: runs web production checks/build, starts/restarts the production web app with PM2, and runs a final health check.
 - `--quick --url=https://xyz.example.com`: runs the same quick flow, then health-checks the supplied public URL with `curl`.
 - `--urls`: prints local and LAN URLs for the production web server.
 - `--status`: shows PM2 process status.
@@ -76,7 +76,7 @@ ALLOW_EMPTY_ADS=1 bash scripts/server.sh --quick
 
 After the first successful production start on Ubuntu, run the PM2 startup command printed by the script so the web process returns after server reboot.
 
-`--quick`, `--web`, and `--mobile` check for required local build/runtime tools such as `turbo`, `pm2`, and `serve`. If `node_modules` is missing or incomplete, the script runs `npm install` first.
+`--quick`, `--web`, and `--mobile` check for required local build/runtime tools such as `turbo`, `pm2`, and `serve`. If `node_modules` is missing or incomplete, the script runs `npm install --include=dev` first. This matters on production servers where npm may otherwise omit dev dependencies.
 
 ## Run Web
 

@@ -31,8 +31,8 @@ Flags:
   --web          Build and start/restart the production web server with PM2 daemon mode.
   --mobile       Type-check mobile and print EAS release commands. Mobile is not a PM2 server.
   --both         Run production web PM2 flow plus mobile release readiness checks.
-  --quick        Run tests/builds, start production web with PM2, then run health check.
-  --build        Run tests, web build, and mobile TypeScript build.
+  --quick        Web only: run web checks/build, start production web with PM2, then run health check.
+  --build        Run web checks/build only.
   --deploy       Same as --quick.
   --url=URL      URL to health-check after --quick or --deploy.
   --urls         Print production server URLs.
@@ -108,9 +108,26 @@ check_prerequisites() {
 
 ensure_dependencies() {
   if [[ ! -d "$ROOT/node_modules" || ! -x "$ROOT/node_modules/.bin/turbo" || ! -x "$ROOT/node_modules/.bin/pm2" || ! -x "$ROOT/node_modules/.bin/serve" ]]; then
-    echo "Project dependencies are missing or incomplete. Running npm install..."
-    npm install
-    return 0
+    echo "Project dependencies are missing or incomplete. Running npm install with dev dependencies..."
+    npm install --include=dev
+  fi
+
+  local missing=0
+  for binary in turbo pm2 serve; do
+    if [[ ! -x "$ROOT/node_modules/.bin/$binary" ]]; then
+      echo "Missing local project binary after install: node_modules/.bin/$binary"
+      missing=1
+    fi
+  done
+
+  if [[ "$missing" == "1" ]]; then
+    echo "npm may be configured to omit dev dependencies."
+    echo "Check these on the server:"
+    echo "  npm config get omit"
+    echo "  echo \$NODE_ENV"
+    echo "Then run:"
+    echo "  npm install --include=dev"
+    exit 1
   fi
 
   echo "OK: project dependencies are installed."
@@ -259,12 +276,16 @@ start_web_production() {
   echo "  npx pm2 startup systemd -u $USER --hp $HOME"
 }
 
-build_checks() {
+web_build_checks() {
   ensure_dependencies
   validate_web_env
-  warn_mobile_env
-  npm run test
+  npm --workspace @tictactoe/game-engine run test
   npm --workspace @tictactoe/web run build
+}
+
+full_build_checks() {
+  web_build_checks
+  warn_mobile_env
   npm --workspace @tictactoe/mobile run build
 }
 
@@ -311,10 +332,8 @@ health_check() {
 }
 
 quick_deploy() {
-  build_checks
+  web_build_checks
   start_web_production
-
-  print_mobile_release_commands
 
   health_check
 }
@@ -327,7 +346,6 @@ case "$TASK" in
     ensure_dependencies
     ensure_env_files
     validate_web_env || echo "Fill web ad env values before production --quick."
-    warn_mobile_env
     echo "PM2 local version: $(npx --no-install pm2 --version 2>/dev/null || echo 'installed after npm install')"
     show_urls
     ;;
@@ -343,14 +361,14 @@ case "$TASK" in
     mobile_release_guidance
     ;;
   both)
-    build_checks
+    full_build_checks
     start_web_production
     mobile_release_guidance
     show_urls
     pm2_cmd status
     ;;
   build)
-    build_checks
+    web_build_checks
     ;;
   quick)
     quick_deploy
