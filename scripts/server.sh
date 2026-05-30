@@ -106,6 +106,16 @@ check_prerequisites() {
   fi
 }
 
+ensure_dependencies() {
+  if [[ ! -d "$ROOT/node_modules" || ! -x "$ROOT/node_modules/.bin/turbo" || ! -x "$ROOT/node_modules/.bin/pm2" || ! -x "$ROOT/node_modules/.bin/serve" ]]; then
+    echo "Project dependencies are missing or incomplete. Running npm install..."
+    npm install
+    return 0
+  fi
+
+  echo "OK: project dependencies are installed."
+}
+
 pm2_cmd() {
   mkdir -p "$PM2_HOME"
   npx pm2 "$@"
@@ -250,6 +260,7 @@ start_web_production() {
 }
 
 build_checks() {
+  ensure_dependencies
   validate_web_env
   warn_mobile_env
   npm run test
@@ -313,7 +324,7 @@ cd "$ROOT"
 case "$TASK" in
   setup)
     check_prerequisites
-    npm install
+    ensure_dependencies
     ensure_env_files
     validate_web_env || echo "Fill web ad env values before production --quick."
     warn_mobile_env
@@ -321,12 +332,14 @@ case "$TASK" in
     show_urls
     ;;
   web)
+    ensure_dependencies
     npm --workspace @tictactoe/web run build
     start_web_production
     show_urls
     pm2_cmd status
     ;;
   mobile)
+    ensure_dependencies
     mobile_release_guidance
     ;;
   both)

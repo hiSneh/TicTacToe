@@ -76,6 +76,8 @@ ALLOW_EMPTY_ADS=1 bash scripts/server.sh --quick
 
 After the first successful production start on Ubuntu, run the PM2 startup command printed by the script so the web process returns after server reboot.
 
+`--quick`, `--web`, and `--mobile` check for required local build/runtime tools such as `turbo`, `pm2`, and `serve`. If `node_modules` is missing or incomplete, the script runs `npm install` first.
+
 ## Run Web
 
 From the repo root:
