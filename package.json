@@ -12,6 +12,7 @@
     "dev": "turbo dev",
     "dev:web": "npm --workspace @tictactoe/web run dev",
     "dev:mobile": "npm --workspace @tictactoe/mobile run start",
+    "server": "bash scripts/server.sh",
     "build": "turbo build",
     "test": "turbo test",
     "lint": "turbo lint",
@@ -19,7 +20,9 @@
   },
   "devDependencies": {
     "@types/react": "~19.0.10",
+    "pm2": "^7.0.1",
     "prettier": "^3.5.3",
+    "serve": "^14.2.6",
     "turbo": "^2.5.3",
     "typescript": "^5.8.3"
   },

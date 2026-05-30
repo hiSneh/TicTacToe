@@ -21,6 +21,61 @@ Production-oriented monorepo for a cross-platform TicTacToe app.
 npm install
 ```
 
+## Server Script
+
+Use the Ubuntu/Linux helper at `scripts/server.sh` for production-style web serving with PM2, release checks, and health checks.
+
+```bash
+bash scripts/server.sh --setup
+bash scripts/server.sh --web
+bash scripts/server.sh --mobile
+bash scripts/server.sh --both
+bash scripts/server.sh --quick
+bash scripts/server.sh --quick --url=https://xyz.example.com
+bash scripts/server.sh --build
+bash scripts/server.sh --urls
+bash scripts/server.sh --status
+bash scripts/server.sh --logs
+bash scripts/server.sh --stop
+```
+
+You can also run the same script through npm:
+
+```bash
+npm run server -- --quick
+npm run server -- --quick --url=https://xyz.example.com
+```
+
+What each flag does:
+
+- `--setup`: checks basic prerequisites, runs `npm install`, creates missing `apps/web/.env.local` and `apps/mobile/.env`, and prints URLs.
+- `--web`: builds and starts/restarts the production web app with PM2 in daemon mode.
+- `--mobile`: type-checks mobile and prints EAS release commands. Mobile is not a PM2 server.
+- `--both`: runs the production web PM2 flow plus mobile release-readiness checks.
+- `--build`: runs tests, web production build, and mobile TypeScript build.
+- `--quick`: runs tests/builds, starts/restarts the production web app with PM2, prints mobile EAS release commands, and runs a final health check.
+- `--quick --url=https://xyz.example.com`: runs the same quick flow, then health-checks the supplied public URL with `curl`.
+- `--urls`: prints local and LAN URLs for the production web server.
+- `--status`: shows PM2 process status.
+- `--logs`: streams PM2 logs.
+- `--stop`: stops and removes the web PM2 process.
+
+PM2 process names:
+
+```bash
+tictactoe-web
+```
+
+For web production serving, PM2 runs the built `apps/web/dist` folder through the local `serve` package on port `3000` by default. Override with `WEB_PORT=8080 bash scripts/server.sh --quick`.
+
+`--quick` validates required web ad env values before building. If you intentionally want to run without AdSense values, use:
+
+```bash
+ALLOW_EMPTY_ADS=1 bash scripts/server.sh --quick
+```
+
+After the first successful production start on Ubuntu, run the PM2 startup command printed by the script so the web process returns after server reboot.
+
 ## Run Web
 
 From the repo root:
@@ -214,7 +269,7 @@ Phase 7 analytics is implemented through small cross-platform local helpers.
 
 ## Deployment
 
-Web target: Vercel.
+Web target: self-hosted Ubuntu server with PM2 serving `apps/web/dist`.
 
 Mobile target: Expo EAS builds for Android Play Store and Apple App Store.
 
