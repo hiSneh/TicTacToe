@@ -97,7 +97,74 @@ npm run test
 
 ## Environment
 
-Copy `.env.example` to `.env.local` for web and configure Expo public variables in your shell or EAS secrets for mobile.
+Use app-specific env files:
+
+- Web: `apps/web/.env.local`
+- Mobile: `apps/mobile/.env` or EAS secrets
+
+The repo-root `.env` is not guaranteed to be read by Vite or Expo in this monorepo.
+
+## Revenue Env Variables
+
+Only the ad variables are required for generating ad revenue.
+
+### Web AdSense
+
+Add these values to `apps/web/.env.local`:
+
+```env
+VITE_ADSENSE_CLIENT_ID=ca-pub-xxxxxxxxxxxxxxxx
+VITE_ADSENSE_DEFAULT_SLOT_ID=xxxxxxxxxx
+```
+
+- `VITE_ADSENSE_CLIENT_ID`: your AdSense publisher/client ID.
+- `VITE_ADSENSE_DEFAULT_SLOT_ID`: your AdSense ad slot ID.
+
+### Mobile AdMob
+
+Add these values to `apps/mobile/.env` or configure them as EAS secrets:
+
+```env
+EXPO_PUBLIC_ADMOB_BANNER_ANDROID=
+EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID=
+EXPO_PUBLIC_ADMOB_REWARDED_ANDROID=
+
+EXPO_PUBLIC_ADMOB_BANNER_IOS=
+EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS=
+EXPO_PUBLIC_ADMOB_REWARDED_IOS=
+```
+
+Also replace the AdMob app IDs in `apps/mobile/app.json` before production builds:
+
+```json
+"androidAppId": "ca-app-pub-xxxxxxxxxxxxxxxx~xxxxxxxxxx",
+"iosAppId": "ca-app-pub-xxxxxxxxxxxxxxxx~xxxxxxxxxx"
+```
+
+`EXPO_PUBLIC_ADMOB_APP_ID_ANDROID` and `EXPO_PUBLIC_ADMOB_APP_ID_IOS` are present in `.env.example`, but the current Expo config reads app IDs from `apps/mobile/app.json`, not from env.
+
+### Not Required For Revenue
+
+Firebase values are not required for ads or revenue in the current local-cache setup:
+
+```env
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
+VITE_FIREBASE_MEASUREMENT_ID=
+
+EXPO_PUBLIC_FIREBASE_API_KEY=
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+EXPO_PUBLIC_FIREBASE_APP_ID=
+```
+
+Firebase Remote Config is optional on web for ad frequency only. Firestore and database-backed profiles are not used.
 
 ## Local Cache
 
@@ -111,14 +178,12 @@ Implemented local cache:
 - The Profile screen lets you rename the local player, generate a new local user, or reset the local score.
 - The Leaderboard screen shows the local cached scoreboard.
 
-Firebase Remote Config is optional on web for ad frequency only. Firestore and database-backed profiles are not used.
-
 ## AdMob Setup Guide
 
 Phase 5 AdMob wiring is implemented for Expo mobile with `react-native-google-mobile-ads`.
 
 - Development uses Google test ad units.
-- Production ad unit IDs come from:
+- Production ad unit IDs come from `apps/mobile/.env` or EAS secrets:
   - `EXPO_PUBLIC_ADMOB_BANNER_ANDROID`
   - `EXPO_PUBLIC_ADMOB_BANNER_IOS`
   - `EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID`
@@ -127,7 +192,7 @@ Phase 5 AdMob wiring is implemented for Expo mobile with `react-native-google-mo
   - `EXPO_PUBLIC_ADMOB_REWARDED_IOS`
 - Interstitials are frequency capped after completed games.
 - Rewarded ads are wired on the Daily Rewards screen.
-- The Expo config plugin is registered in `apps/mobile/app.json` with Google test app IDs. Replace these with production app IDs before store builds.
+- The Expo config plugin is registered in `apps/mobile/app.json` with Google test app IDs. Replace those app IDs with production AdMob app IDs before store builds.
 
 ## AdSense Setup Guide
 
@@ -135,6 +200,7 @@ Phase 5 AdSense wiring is implemented for web.
 
 - Set `VITE_ADSENSE_CLIENT_ID`.
 - Set `VITE_ADSENSE_DEFAULT_SLOT_ID`.
+- Put both values in `apps/web/.env.local`.
 - Web ad slots lazy-load the AdSense script and request fills only when mounted.
 - If env values are missing, ad-safe placeholders render without crashing.
 
@@ -157,5 +223,5 @@ Mobile target: Expo EAS builds for Android Play Store and Apple App Store.
 - Add production app icons and splash assets.
 - Add privacy policy and data safety declarations.
 - Replace development ad IDs with production IDs.
-- Configure Firebase bundle IDs/package names.
+- Replace AdMob test app IDs in `apps/mobile/app.json`.
 - Run production build checks.
