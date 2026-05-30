@@ -66,7 +66,7 @@ PM2 process names:
 tictactoe-web
 ```
 
-For web production serving, PM2 runs the built `apps/web/dist` folder through the local `serve` package on port `3000` by default. Override with `WEB_PORT=8080 bash scripts/server.sh --quick`.
+For web production serving, PM2 runs the built `apps/web/dist` folder through the local `serve` package on port `3001` by default. Override with `WEB_PORT=8080 bash scripts/server.sh --quick`.
 
 `--quick` validates required web ad env values before building. If you intentionally want to run without AdSense values, use:
 

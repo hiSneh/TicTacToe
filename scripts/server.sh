@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-WEB_PORT="${WEB_PORT:-3000}"
+WEB_PORT="${WEB_PORT:-3001}"
 PM2_HOME="${PM2_HOME:-$HOME/.pm2}"
 APP_URL=""
 TASK=""
