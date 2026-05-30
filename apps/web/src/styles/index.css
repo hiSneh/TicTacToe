@@ -41,3 +41,46 @@ a {
     inset 0 0 0 2px rgba(249, 213, 110, 0.9),
     0 0 28px rgba(249, 213, 110, 0.28);
 }
+
+.infinite-board {
+  filter: drop-shadow(0 0 26px rgba(65, 244, 211, 0.14));
+}
+
+.cell-expired {
+  animation: expire-pulse 700ms ease-out;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 79, 216, 0.8),
+    0 0 34px rgba(255, 79, 216, 0.32);
+}
+
+.cell-expiring {
+  animation: expiring-warning 1200ms ease-in-out infinite;
+  box-shadow:
+    inset 0 0 0 2px rgba(249, 213, 110, 0.92),
+    0 0 30px rgba(249, 213, 110, 0.3);
+}
+
+@keyframes expire-pulse {
+  0% {
+    opacity: 0.45;
+    transform: scale(0.94);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes expiring-warning {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.25);
+  }
+}

@@ -2,7 +2,7 @@ export type PlayerMark = 'X' | 'O';
 export type CellValue = PlayerMark | null;
 export type Board = CellValue[];
 export type GameStatus = 'playing' | 'won' | 'draw';
-export type GameMode = 'classic' | 'fourByFour' | 'timed' | 'streak' | 'tournament';
+export type GameMode = 'classic' | 'fourByFour' | 'timed' | 'streak' | 'tournament' | 'infinite';
 export type Difficulty = 'easy' | 'medium' | 'hard' | 'impossible';
 
 export interface Move {
@@ -25,6 +25,24 @@ export interface GameResult {
   status: GameStatus;
   winner: PlayerMark | null;
   winningLine: number[];
+  reason?: 'line' | 'draw' | 'timeout';
+}
+
+export interface InfiniteState {
+  activeMoves: Record<PlayerMark, Move[]>;
+  expiredMove: Move | null;
+  maxActiveMarks: number;
+}
+
+export interface TimedState {
+  turnStartedAt: number;
+  turnDeadline: number | null;
+  turnSeconds: number;
+}
+
+export interface GameModeState {
+  infinite: InfiniteState;
+  timed: TimedState;
 }
 
 export interface GameState {
@@ -33,6 +51,7 @@ export interface GameState {
   config: GameConfig;
   history: Move[];
   result: GameResult;
+  modeState: GameModeState;
 }
 
 export interface MultiplayerAdapter {

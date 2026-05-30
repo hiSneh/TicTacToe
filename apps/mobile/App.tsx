@@ -1,4 +1,5 @@
 import 'react-native-gesture-handler';
+import { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
@@ -13,6 +14,10 @@ import { ProfileScreen } from './src/screens/ProfileScreen';
 import { RewardsScreen } from './src/screens/RewardsScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { TournamentScreen } from './src/screens/TournamentScreen';
+import { initializeAds } from './src/ads/adMob';
+import { trackEvent, trackScreenView } from './src/services/analytics';
+import { useAuthStore } from './src/store/authStore';
+import { useScoreStore } from './src/store/scoreStore';
 
 export type RootTabParamList = {
   Home: undefined;
@@ -39,9 +44,27 @@ const icons = {
 };
 
 export default function App() {
+  const startAuth = useAuthStore((state) => state.start);
+  const user = useAuthStore((state) => state.user);
+  const startScores = useScoreStore((state) => state.start);
+  const syncLocalName = useScoreStore((state) => state.syncLocalName);
+
+  useEffect(() => startAuth(), [startAuth]);
+
+  useEffect(() => {
+    if (!user) return;
+    startScores();
+    syncLocalName();
+  }, [startScores, syncLocalName, user]);
+
+  useEffect(() => {
+    void initializeAds();
+    trackEvent('app_open', { platform: 'mobile' });
+  }, []);
+
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
+      <NavigationContainer onStateChange={(state) => trackScreenView(state?.routes[state.index]?.name ?? 'Unknown')}>
         <StatusBar style="light" />
         <Tab.Navigator
           screenOptions={({ route }) => ({

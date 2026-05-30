@@ -118,6 +118,117 @@ Impossible mode must use Minimax algorithm.
 3. Timed mode
 4. Win streak mode
 5. Tournament mode
+6. Infinite Play mode
+
+## ADDITIONAL GAME MODE — INFINITE PLAY
+
+Implement a special mode called:
+
+# Infinite Play Mode
+
+Rules:
+- The board is still 3x3.
+- Each player can only have a maximum of 3 active marks on the board at a time.
+- After a player places their 4th mark:
+  - Their oldest mark disappears automatically.
+- Only the latest 3 moves from each player remain visible on the board.
+- Winning condition remains:
+  - 3 in a row.
+
+Example:
+1. X places 3 marks.
+2. O places 3 marks.
+3. X places 4th mark:
+   - X’s oldest mark is removed.
+4. O places 4th mark:
+   - O’s oldest mark is removed.
+
+This creates an endless shifting strategy mode.
+
+---
+
+# INFINITE MODE REQUIREMENTS
+
+Implement:
+- Move history queue for each player
+- Automatic removal animation
+- Smooth transitions
+- Highlight disappearing cells
+- Special sound effects
+- Infinite mode badge/UI indicator
+
+---
+
+# GAME ENGINE REQUIREMENTS
+
+Extend game engine to support:
+- Dynamic move expiration
+- FIFO move tracking
+- Infinite turn cycling
+- Winner calculation after removals
+
+Create:
+- reusable infinite mode logic
+- isolated tests for infinite mode
+
+---
+
+# UI REQUIREMENTS
+
+Add:
+- Animated fade-out for removed moves
+- Move counters
+- Timeline/history panel
+- Distinct neon visual theme for Infinite Mode
+
+---
+
+# AI REQUIREMENTS FOR INFINITE MODE
+
+AI must:
+- Understand temporary positions
+- Predict future board removals
+- Adapt Minimax for rotating board state
+
+Difficulty levels:
+- Easy
+- Medium
+- Hard
+- Impossible
+
+Impossible AI should strategically manipulate:
+- Opponent move expiration
+- Board cycling
+- Trap setups
+
+---
+
+# MULTIPLAYER SUPPORT
+
+Infinite Mode must support:
+- Local multiplayer
+- Future online multiplayer compatibility
+
+---
+
+# ANALYTICS
+
+Track:
+- Infinite mode sessions
+- Average match duration
+- Win rate
+- Most common winning patterns
+
+---
+
+# TESTING
+
+Create unit tests for:
+- Oldest move removal
+- Queue logic
+- Winner calculation after removal
+- Edge cases
+- AI behavior
 
 ---
 

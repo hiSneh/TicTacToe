@@ -1,5 +1,5 @@
 import { availableMoves, evaluateBoard, placeMove } from './board';
-import type { Board, Difficulty, PlayerMark } from './types';
+import type { Board, Difficulty, GameMode, Move, PlayerMark } from './types';
 
 interface AiOptions {
   board: Board;
@@ -8,6 +8,8 @@ interface AiOptions {
   size: 3 | 4;
   winLength: 3 | 4;
   difficulty: Difficulty;
+  mode?: GameMode;
+  activeMoves?: Record<PlayerMark, Move[]>;
 }
 
 const randomMove = (board: Board): number => {
@@ -90,21 +92,39 @@ const findTacticalMove = (
   size: 3 | 4,
   winLength: 3 | 4,
   mark: PlayerMark,
+  activeMoves?: Record<PlayerMark, Move[]>,
+  mode?: GameMode,
 ): number | null => {
   for (const move of availableMoves(board)) {
-    const next = placeMove(board, move, mark);
+    const next = simulateMove(board, move, mark, activeMoves, mode);
     if (evaluateBoard(next, size, winLength).winner === mark) return move;
   }
 
   return null;
 };
 
+const simulateMove = (
+  board: Board,
+  index: number,
+  player: PlayerMark,
+  activeMoves?: Record<PlayerMark, Move[]>,
+  mode?: GameMode,
+): Board => {
+  const next = placeMove(board, index, player);
+  if (mode !== 'infinite' || !activeMoves) return next;
+
+  const queue = [...activeMoves[player], { index, player, timestamp: 0 }];
+  const expiredMove = queue.length > 3 ? queue.shift() : null;
+  if (expiredMove) next[expiredMove.index] = null;
+  return next;
+};
+
 const heuristicMove = (options: AiOptions): number => {
   const { board, size, winLength, aiMark, humanMark } = options;
-  const winningMove = findTacticalMove(board, size, winLength, aiMark);
+  const winningMove = findTacticalMove(board, size, winLength, aiMark, options.activeMoves, options.mode);
   if (winningMove !== null) return winningMove;
 
-  const blockMove = findTacticalMove(board, size, winLength, humanMark);
+  const blockMove = findTacticalMove(board, size, winLength, humanMark, options.activeMoves, options.mode);
   if (blockMove !== null) return blockMove;
 
   const center = Math.floor(board.length / 2);

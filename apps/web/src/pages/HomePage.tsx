@@ -1,4 +1,4 @@
-import { ArrowRight, Bot, Clock, Flame, Grid2X2, Trophy } from 'lucide-react';
+import { ArrowRight, Bot, Clock, Flame, Grid2X2, Infinity, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AdPlaceholder } from '../components/AdPlaceholder';
 import { StatPill } from '../components/StatPill';
@@ -12,6 +12,7 @@ export const HomePage = () => {
     { label: 'Timed Duel', icon: Clock },
     { label: 'Win Streak', icon: Flame },
     { label: 'Tournament', icon: Trophy },
+    { label: 'Infinite Play', icon: Infinity },
   ];
 
   return (
@@ -49,7 +50,7 @@ export const HomePage = () => {
             ))}
           </div>
         </div>
-        <AdPlaceholder label="Responsive AdSense slot placeholder" />
+        <AdPlaceholder label="Responsive AdSense slot" placement="home_sidebar" />
       </section>
     </div>
   );

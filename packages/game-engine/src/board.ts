@@ -60,12 +60,12 @@ export const evaluateBoard = (board: Board, size: number, winLength: number): Ga
     const owner = board[first];
 
     if (owner && line.every((index) => board[index] === owner)) {
-      return { status: 'won', winner: owner, winningLine: line };
+      return { status: 'won', winner: owner, winningLine: line, reason: 'line' };
     }
   }
 
   if (board.every(Boolean)) {
-    return { status: 'draw', winner: null, winningLine: [] };
+    return { status: 'draw', winner: null, winningLine: [], reason: 'draw' };
   }
 
   return { status: 'playing', winner: null, winningLine: [] };

@@ -6,12 +6,15 @@ interface GameBoardProps {
   board: Board;
   size: 3 | 4;
   winningLine: number[];
+  expiredIndex?: number | null;
+  expiringIndices?: number[];
+  infinite?: boolean;
   onMove: (index: number) => void;
 }
 
-export const GameBoard = ({ board, size, winningLine, onMove }: GameBoardProps) => (
+export const GameBoard = ({ board, size, winningLine, expiredIndex, expiringIndices = [], infinite, onMove }: GameBoardProps) => (
   <div
-    className="grid w-full max-w-[26rem] gap-3"
+    className={`grid w-full max-w-[26rem] gap-3 ${infinite ? 'infinite-board' : ''}`}
     style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))` }}
     role="grid"
     aria-label={`${size} by ${size} TicTacToe board`}
@@ -28,9 +31,17 @@ export const GameBoard = ({ board, size, winningLine, onMove }: GameBoardProps) 
           cell === 'X' && 'text-aqua',
           cell === 'O' && 'text-rose',
           winningLine.includes(index) && 'cell-highlight',
+          expiringIndices.includes(index) && 'cell-expiring',
+          expiredIndex === index && 'cell-expired',
         )}
         role="gridcell"
-        aria-label={cell ? `${cell} at ${index + 1}` : `Empty cell ${index + 1}`}
+        aria-label={
+          cell
+            ? expiringIndices.includes(index)
+              ? `${cell} at ${index + 1}, next to fade`
+              : `${cell} at ${index + 1}`
+            : `Empty cell ${index + 1}`
+        }
       >
         {cell && (
           <motion.span initial={{ scale: 0, rotate: -12 }} animate={{ scale: 1, rotate: 0 }}>
