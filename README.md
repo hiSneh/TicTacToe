@@ -29,9 +29,15 @@ Use the Ubuntu/Linux helper at `scripts/server.sh` for production-style web serv
 bash scripts/server.sh --setup
 bash scripts/server.sh --web
 bash scripts/server.sh --mobile
+bash scripts/server.sh --mobile-build
+bash scripts/server.sh --mobile-submit
+bash scripts/server.sh --mobile-publish
 bash scripts/server.sh --both
 bash scripts/server.sh --quick
+bash scripts/server.sh --mobile-quick
+bash scripts/server.sh --all-quick
 bash scripts/server.sh --quick --url=https://xyz.example.com
+bash scripts/server.sh --quick --empty-ads --url=https://xyz.example.com
 bash scripts/server.sh --build
 bash scripts/server.sh --urls
 bash scripts/server.sh --status
@@ -51,10 +57,18 @@ What each flag does:
 - `--setup`: checks basic prerequisites, runs `npm install`, creates missing `apps/web/.env.local` and `apps/mobile/.env`, and prints URLs.
 - `--web`: builds and starts/restarts the production web app with PM2 in daemon mode.
 - `--mobile`: type-checks mobile and prints EAS release commands. Mobile is not a PM2 server.
-- `--both`: runs the production web PM2 flow plus mobile release-readiness checks.
+- `--mobile-build`: builds Android/iOS with EAS using `apps/mobile/eas.json`.
+- `--mobile-submit`: submits the latest EAS builds to Play Store/App Store.
+- `--mobile-publish`: runs `--mobile-build`, then `--mobile-submit`.
+- `--mobile-quick`: same as `--mobile-publish`.
+- `--both`: runs the production web PM2 flow plus mobile type-check.
 - `--build`: runs web production checks and web build.
 - `--quick`: runs web production checks/build, starts/restarts the production web app with PM2, and runs a final health check.
+- `--all-quick`: runs web `--quick`, then mobile `--mobile-publish`.
 - `--quick --url=https://xyz.example.com`: runs the same quick flow, then health-checks the supplied public URL with `curl`.
+- `--empty-ads`: allows empty AdSense/AdMob env values during verification before you add ad secrets.
+- `--platform=all|android|ios`: chooses mobile EAS platform. Default: `all`.
+- `--profile=production`: chooses the EAS profile. Default: `production`.
 - `--urls`: prints local and LAN URLs for the production web server.
 - `--status`: shows PM2 process status.
 - `--logs`: streams PM2 logs.
@@ -74,9 +88,51 @@ For web production serving, PM2 runs the built `apps/web/dist` folder through th
 ALLOW_EMPTY_ADS=1 bash scripts/server.sh --quick
 ```
 
+Or use the built-in flag:
+
+```bash
+bash scripts/server.sh --quick --empty-ads
+```
+
 After the first successful production start on Ubuntu, run the PM2 startup command printed by the script so the web process returns after server reboot.
 
-`--quick`, `--web`, and `--mobile` check for required local build/runtime tools such as `turbo`, `pm2`, and `serve`. If `node_modules` is missing or incomplete, the script runs `npm install --include=dev` first. This matters on production servers where npm may otherwise omit dev dependencies.
+`--quick`, `--web`, and `--mobile` check for required local build/runtime tools such as `turbo`, `pm2`, `serve`, and `eas`. If `node_modules` is missing or incomplete, the script runs `npm install --include=dev` first. This matters on production servers where npm may otherwise omit dev dependencies.
+
+Mobile release commands use EAS from `apps/mobile`:
+
+Simple commands:
+
+```bash
+# Web only: build and run with PM2
+bash scripts/server.sh --quick --url=https://games.narrateai.online
+
+# Mobile only: build and submit Android/iOS
+bash scripts/server.sh --mobile-quick --platform=all --profile=production
+
+# Everything: web quick + mobile build/submit
+bash scripts/server.sh --all-quick --platform=all --profile=production --url=https://games.narrateai.online
+```
+
+Detailed commands:
+
+```bash
+bash scripts/server.sh --mobile-build --platform=android --profile=production
+bash scripts/server.sh --mobile-build --platform=ios --profile=production
+bash scripts/server.sh --mobile-submit --platform=android --profile=production
+bash scripts/server.sh --mobile-submit --platform=ios --profile=production
+```
+
+Use `--mobile-publish` to build and submit in one flow after store credentials are ready:
+
+```bash
+bash scripts/server.sh --mobile-publish --platform=all --profile=production
+```
+
+For verification before adding AdMob secrets, add `--empty-ads`:
+
+```bash
+bash scripts/server.sh --mobile-build --platform=android --empty-ads
+```
 
 ## Run Web
 
@@ -239,6 +295,15 @@ Implemented local cache:
 
 Phase 5 AdMob wiring is implemented for Expo mobile with `react-native-google-mobile-ads`.
 
+- AdMob is disabled by default for mobile testing:
+  ```env
+  EXPO_PUBLIC_DISABLE_ADMOB=true
+  ```
+- To enable AdMob later, set this in `apps/mobile/.env`:
+  ```env
+  EXPO_PUBLIC_DISABLE_ADMOB=false
+  ```
+- After enabling AdMob, use a custom native development build or EAS production build. Expo Go does not include the AdMob native module and will crash if AdMob is enabled there.
 - Development uses Google test ad units.
 - Production ad unit IDs come from `apps/mobile/.env` or EAS secrets:
   - `EXPO_PUBLIC_ADMOB_BANNER_ANDROID`

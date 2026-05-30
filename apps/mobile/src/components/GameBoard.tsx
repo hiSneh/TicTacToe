@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import type { Board } from '@tictactoe/game-engine';
 import { theme } from '../theme';
 
@@ -13,50 +13,60 @@ interface GameBoardProps {
   onMove: (index: number) => void;
 }
 
-export const GameBoard = ({ board, size, winningLine, expiredIndex, expiringIndices = [], infinite, onMove }: GameBoardProps) => (
-  <View style={[styles.board, infinite && styles.infiniteBoard, { maxWidth: size === 3 ? 360 : 380 }]}>
-    {board.map((cell, index) => (
-      <Pressable
-        key={index}
-        disabled={Boolean(cell)}
-        onPress={() => {
-          Haptics.selectionAsync();
-          onMove(index);
-        }}
-        style={({ pressed }) => [
-          styles.cell,
-          {
-            width: `${100 / size - 2}%`,
-            aspectRatio: 1,
-            transform: [{ scale: pressed ? 0.96 : 1 }],
-          },
-          winningLine.includes(index) && styles.winningCell,
-          expiringIndices.includes(index) && styles.expiringCell,
-          expiredIndex === index && styles.expiredCell,
-        ]}
-        accessibilityRole="button"
-        accessibilityLabel={
-          cell
-            ? expiringIndices.includes(index)
-              ? `${cell} in cell ${index + 1}, next to fade`
-              : `${cell} in cell ${index + 1}`
-            : `Empty cell ${index + 1}`
-        }
-      >
-        <Text style={[styles.mark, cell === 'X' ? styles.x : styles.o]}>{cell}</Text>
-      </Pressable>
-    ))}
-  </View>
-);
+export const GameBoard = ({ board, size, winningLine, expiredIndex, expiringIndices = [], infinite, onMove }: GameBoardProps) => {
+  const { width } = useWindowDimensions();
+  const boardSize = Math.min(width - 68, size === 3 ? 360 : 380);
+  const gap = 10;
+  const boardPadding = infinite ? 4 : 0;
+  const innerBoardSize = boardSize - boardPadding * 2;
+  const cellSize = Math.floor((innerBoardSize - gap * (size - 1)) / size);
+  const markSize = size === 3 ? 50 : 40;
+
+  return (
+    <View style={[styles.board, infinite && styles.infiniteBoard, { width: boardSize, padding: boardPadding, gap }]}>
+      {board.map((cell, index) => (
+        <Pressable
+          key={index}
+          disabled={Boolean(cell)}
+          onPress={() => {
+            Haptics.selectionAsync();
+            onMove(index);
+          }}
+          style={({ pressed }) => [
+            styles.cell,
+            {
+              width: cellSize,
+              height: cellSize,
+              transform: [{ scale: pressed ? 0.96 : 1 }],
+            },
+            winningLine.includes(index) && styles.winningCell,
+            expiringIndices.includes(index) && styles.expiringCell,
+            expiredIndex === index && styles.expiredCell,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel={
+            cell
+              ? expiringIndices.includes(index)
+                ? `${cell} in cell ${index + 1}, next to fade`
+                : `${cell} in cell ${index + 1}`
+              : `Empty cell ${index + 1}`
+          }
+        >
+          <View style={styles.markCenter}>
+            <Text style={[styles.mark, { fontSize: markSize, lineHeight: markSize }, cell === 'X' ? styles.x : styles.o]}>{cell}</Text>
+          </View>
+        </Pressable>
+      ))}
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   board: {
     alignSelf: 'center',
-    width: '100%',
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: 8,
   },
   cell: {
     alignItems: 'center',
@@ -81,16 +91,23 @@ const styles = StyleSheet.create({
   },
   expiringCell: {
     borderColor: theme.colors.gold,
-    backgroundColor: 'rgba(249, 213, 110, 0.16)',
+    backgroundColor: 'rgba(249, 213, 110, 0.11)',
     shadowColor: theme.colors.gold,
     shadowOpacity: 0.35,
     shadowRadius: 12,
     elevation: 4,
   },
+  markCenter: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   mark: {
-    fontSize: 48,
     fontWeight: '900',
     color: theme.colors.text,
+    includeFontPadding: false,
+    textAlign: 'center',
+    textAlignVertical: 'center',
   },
   x: {
     color: theme.colors.aqua,

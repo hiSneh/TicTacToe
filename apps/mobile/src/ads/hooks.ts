@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AdEventType, createInterstitial, createRewarded, RewardedAdEventType } from './adMob';
+import { createInterstitial, createRewarded, getAdEventTypes, getRewardedAdEventTypes, isAdMobAvailable } from './adMob';
 import { useAdsStore } from '../store/adsStore';
 import { trackEvent } from '../services/analytics';
 
@@ -10,12 +10,15 @@ export const useInterstitialAd = (placement = 'game_complete') => {
   const markInterstitialShown = useAdsStore((state) => state.markInterstitialShown);
 
   useEffect(() => {
-    const loadedListener = interstitial.addAdEventListener(AdEventType.LOADED, () => setLoaded(true));
-    const closedListener = interstitial.addAdEventListener(AdEventType.CLOSED, () => {
+    if (!isAdMobAvailable()) return undefined;
+
+    const adEventTypes = getAdEventTypes();
+    const loadedListener = interstitial.addAdEventListener(adEventTypes.LOADED, () => setLoaded(true));
+    const closedListener = interstitial.addAdEventListener(adEventTypes.CLOSED, () => {
       setLoaded(false);
       interstitial.load();
     });
-    const errorListener = interstitial.addAdEventListener(AdEventType.ERROR, () => {
+    const errorListener = interstitial.addAdEventListener(adEventTypes.ERROR, () => {
       setLoaded(false);
       trackEvent('ad_request_failed', { provider: 'admob', placement, platform: 'mobile' });
     });
@@ -42,13 +45,17 @@ export const useRewardedAd = (reward = 'hint') => {
   const markRewardEarned = useAdsStore((state) => state.markRewardEarned);
 
   useEffect(() => {
-    const loadedListener = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => setLoaded(true));
-    const earnedListener = rewarded.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => markRewardEarned(reward));
-    const closedListener = rewarded.addAdEventListener(AdEventType.CLOSED, () => {
+    if (!isAdMobAvailable()) return undefined;
+
+    const adEventTypes = getAdEventTypes();
+    const rewardedAdEventTypes = getRewardedAdEventTypes();
+    const loadedListener = rewarded.addAdEventListener(rewardedAdEventTypes.LOADED, () => setLoaded(true));
+    const earnedListener = rewarded.addAdEventListener(rewardedAdEventTypes.EARNED_REWARD, () => markRewardEarned(reward));
+    const closedListener = rewarded.addAdEventListener(adEventTypes.CLOSED, () => {
       setLoaded(false);
       rewarded.load();
     });
-    const errorListener = rewarded.addAdEventListener(AdEventType.ERROR, () => {
+    const errorListener = rewarded.addAdEventListener(adEventTypes.ERROR, () => {
       setLoaded(false);
       trackEvent('ad_request_failed', { provider: 'admob', reward, platform: 'mobile' });
     });

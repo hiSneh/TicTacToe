@@ -6,6 +6,9 @@ WEB_PORT="${WEB_PORT:-3001}"
 PM2_HOME="${PM2_HOME:-$HOME/.pm2}"
 APP_URL=""
 TASK=""
+MOBILE_PLATFORM="all"
+EAS_PROFILE="production"
+EMPTY_ADS=0
 
 export NODE_ENV="${NODE_ENV:-production}"
 export PM2_HOME
@@ -16,9 +19,15 @@ Usage:
   bash scripts/server.sh --setup
   bash scripts/server.sh --web
   bash scripts/server.sh --mobile
+  bash scripts/server.sh --mobile-build
+  bash scripts/server.sh --mobile-submit
+  bash scripts/server.sh --mobile-publish
   bash scripts/server.sh --both
   bash scripts/server.sh --quick
+  bash scripts/server.sh --mobile-quick
+  bash scripts/server.sh --all-quick
   bash scripts/server.sh --quick --url=https://xyz.example.com
+  bash scripts/server.sh --quick --empty-ads --url=https://xyz.example.com
   bash scripts/server.sh --build
   bash scripts/server.sh --deploy
   bash scripts/server.sh --urls
@@ -30,11 +39,20 @@ Flags:
   --setup        Check prerequisites, install dependencies, and create missing env files.
   --web          Build and start/restart the production web server with PM2 daemon mode.
   --mobile       Type-check mobile and print EAS release commands. Mobile is not a PM2 server.
-  --both         Run production web PM2 flow plus mobile release readiness checks.
+  --mobile-build Build mobile with EAS for Android/iOS.
+  --mobile-submit Submit the latest EAS builds to Play Store/App Store.
+  --mobile-publish Build mobile with EAS, then submit to Play Store/App Store.
+  --mobile-quick Same as --mobile-publish.
+  --both         Run production web PM2 flow plus mobile type-check.
   --quick        Web only: run web checks/build, start production web with PM2, then run health check.
+  --all-quick    Run web --quick, then mobile --mobile-publish.
   --build        Run web checks/build only.
   --deploy       Same as --quick.
   --url=URL      URL to health-check after --quick or --deploy.
+  --platform=all|android|ios
+                 Mobile platform for EAS build/submit. Default: all.
+  --profile=NAME EAS build/submit profile. Default: production.
+  --empty-ads    Allow empty web/mobile ad env values for verification runs.
   --urls         Print production server URLs.
   --status       Show PM2 process status.
   --logs         Stream PM2 logs.
@@ -47,8 +65,13 @@ for arg in "$@"; do
     --setup) TASK="setup" ;;
     --web) TASK="web" ;;
     --mobile) TASK="mobile" ;;
+    --mobile-build) TASK="mobile-build" ;;
+    --mobile-submit) TASK="mobile-submit" ;;
+    --mobile-publish) TASK="mobile-publish" ;;
+    --mobile-quick) TASK="mobile-publish" ;;
     --both) TASK="both" ;;
     --quick) TASK="quick" ;;
+    --all-quick) TASK="all-quick" ;;
     --build) TASK="build" ;;
     --deploy) TASK="quick" ;;
     --urls) TASK="urls" ;;
@@ -56,12 +79,20 @@ for arg in "$@"; do
     --logs) TASK="logs" ;;
     --stop) TASK="stop" ;;
     --url=*) APP_URL="${arg#--url=}" ;;
+    --platform=*) MOBILE_PLATFORM="${arg#--platform=}" ;;
+    --profile=*) EAS_PROFILE="${arg#--profile=}" ;;
+    --empty-ads) EMPTY_ADS=1; export ALLOW_EMPTY_ADS=1; export EXPO_PUBLIC_DISABLE_ADMOB=true ;;
     --help|-h) usage; exit 0 ;;
     *) echo "Unknown argument: $arg"; usage; exit 1 ;;
   esac
 done
 
 TASK="${TASK:-urls}"
+
+case "$MOBILE_PLATFORM" in
+  all|android|ios) ;;
+  *) echo "Invalid --platform value: $MOBILE_PLATFORM. Use all, android, or ios."; exit 1 ;;
+esac
 
 require_command() {
   local command_name="$1"
@@ -96,7 +127,7 @@ check_prerequisites() {
 
   optional_command git "Install git if you plan to clone or version this project."
   optional_command curl "Install curl for HTTP health checks."
-  optional_command eas "Install with: npm install -g eas-cli"
+  optional_command eas "Install with: npm install -g eas-cli, or let the script use npx eas-cli."
 
   if [[ -f "$ROOT/package.json" ]]; then
     echo "OK: package.json found"
@@ -104,16 +135,23 @@ check_prerequisites() {
     echo "package.json not found. Run this script from the project repo."
     exit 1
   fi
+
+  if [[ -f "$ROOT/apps/mobile/eas.json" ]]; then
+    echo "OK: apps/mobile/eas.json found"
+  else
+    echo "Missing apps/mobile/eas.json. Mobile EAS build/submit commands need this file."
+    exit 1
+  fi
 }
 
 ensure_dependencies() {
-  if [[ ! -d "$ROOT/node_modules" || ! -x "$ROOT/node_modules/.bin/turbo" || ! -x "$ROOT/node_modules/.bin/pm2" || ! -x "$ROOT/node_modules/.bin/serve" ]]; then
+  if [[ ! -d "$ROOT/node_modules" || ! -x "$ROOT/node_modules/.bin/turbo" || ! -x "$ROOT/node_modules/.bin/pm2" || ! -x "$ROOT/node_modules/.bin/serve" || ! -x "$ROOT/node_modules/.bin/eas" ]]; then
     echo "Project dependencies are missing or incomplete. Running npm install with dev dependencies..."
     npm install --include=dev
   fi
 
   local missing=0
-  for binary in turbo pm2 serve; do
+  for binary in turbo pm2 serve eas; do
     if [[ ! -x "$ROOT/node_modules/.bin/$binary" ]]; then
       echo "Missing local project binary after install: node_modules/.bin/$binary"
       missing=1
@@ -164,7 +202,7 @@ require_env_value() {
 validate_web_env() {
   local web_env="$ROOT/apps/web/.env.local"
 
-  if [[ "${ALLOW_EMPTY_ADS:-0}" == "1" ]]; then
+  if [[ "${ALLOW_EMPTY_ADS:-0}" == "1" || "$EMPTY_ADS" == "1" ]]; then
     echo "Skipping AdSense env validation because ALLOW_EMPTY_ADS=1."
     return 0
   fi
@@ -176,6 +214,11 @@ validate_web_env() {
 warn_mobile_env() {
   local mobile_env="$ROOT/apps/mobile/.env"
   local missing=0
+
+  if [[ "${ALLOW_EMPTY_ADS:-0}" == "1" || "$EMPTY_ADS" == "1" ]]; then
+    echo "Skipping AdMob env validation because empty ads are allowed."
+    return 0
+  fi
   local keys=(
     EXPO_PUBLIC_ADMOB_BANNER_ANDROID
     EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID
@@ -194,6 +237,36 @@ warn_mobile_env() {
 
   if [[ "$missing" == "1" ]]; then
     echo "Mobile store builds can still be prepared, but real AdMob revenue needs these values."
+  fi
+}
+
+require_mobile_env() {
+  local mobile_env="$ROOT/apps/mobile/.env"
+  local missing=0
+  local keys=(
+    EXPO_PUBLIC_ADMOB_BANNER_ANDROID
+    EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID
+    EXPO_PUBLIC_ADMOB_REWARDED_ANDROID
+    EXPO_PUBLIC_ADMOB_BANNER_IOS
+    EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS
+    EXPO_PUBLIC_ADMOB_REWARDED_IOS
+  )
+
+  if [[ "${ALLOW_EMPTY_ADS:-0}" == "1" || "$EMPTY_ADS" == "1" ]]; then
+    echo "Skipping required AdMob env validation because empty ads are allowed."
+    return 0
+  fi
+
+  for key in "${keys[@]}"; do
+    if [[ -z "$(env_value "$mobile_env" "$key")" ]]; then
+      echo "Missing required mobile ad env value: $key in $mobile_env"
+      missing=1
+    fi
+  done
+
+  if [[ "$missing" == "1" ]]; then
+    echo "Use --empty-ads while verifying builds without AdMob secrets."
+    exit 1
   fi
 }
 
@@ -244,6 +317,7 @@ EOF
 EXPO_PUBLIC_ADMOB_BANNER_ANDROID=
 EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID=
 EXPO_PUBLIC_ADMOB_REWARDED_ANDROID=
+EXPO_PUBLIC_DISABLE_ADMOB=true
 
 EXPO_PUBLIC_ADMOB_BANNER_IOS=
 EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS=
@@ -252,6 +326,10 @@ EOF
     echo "Created apps/mobile/.env"
   else
     echo "OK: apps/mobile/.env exists"
+    if ! grep -q '^EXPO_PUBLIC_DISABLE_ADMOB=' "$ROOT/apps/mobile/.env"; then
+      printf '\nEXPO_PUBLIC_DISABLE_ADMOB=true\n' >> "$ROOT/apps/mobile/.env"
+      echo "Added EXPO_PUBLIC_DISABLE_ADMOB=true to apps/mobile/.env"
+    fi
   fi
 }
 
@@ -291,17 +369,44 @@ full_build_checks() {
 
 print_mobile_release_commands() {
   echo
-  echo "Mobile store release commands, run when credentials are ready:"
-  echo "  eas build --platform android --profile production"
-  echo "  eas build --platform ios --profile production"
-  echo "  eas submit --platform android"
-  echo "  eas submit --platform ios"
+  echo "Mobile store release commands:"
+  echo "  bash scripts/server.sh --mobile-build --platform=$MOBILE_PLATFORM --profile=$EAS_PROFILE"
+  echo "  bash scripts/server.sh --mobile-submit --platform=$MOBILE_PLATFORM --profile=$EAS_PROFILE"
+  echo "  bash scripts/server.sh --mobile-publish --platform=$MOBILE_PLATFORM --profile=$EAS_PROFILE"
 }
 
 mobile_release_guidance() {
   warn_mobile_env
   npm --workspace @tictactoe/mobile run build
   print_mobile_release_commands
+}
+
+eas_cmd() {
+  if [[ -x "$ROOT/node_modules/.bin/eas" ]]; then
+    (cd "$ROOT/apps/mobile" && "$ROOT/node_modules/.bin/eas" "$@")
+  elif command -v eas >/dev/null 2>&1; then
+    (cd "$ROOT/apps/mobile" && eas "$@")
+  else
+    (cd "$ROOT/apps/mobile" && npx --yes eas-cli "$@")
+  fi
+}
+
+mobile_build() {
+  ensure_dependencies
+  require_mobile_env
+  npm --workspace @tictactoe/mobile run build
+  eas_cmd build --platform "$MOBILE_PLATFORM" --profile "$EAS_PROFILE" --non-interactive
+}
+
+mobile_submit() {
+  require_command npx "Install npm/npx with Node.js."
+  require_mobile_env
+  eas_cmd submit --platform "$MOBILE_PLATFORM" --profile "$EAS_PROFILE" --latest --non-interactive
+}
+
+mobile_publish() {
+  mobile_build
+  mobile_submit
 }
 
 health_check() {
@@ -346,6 +451,7 @@ case "$TASK" in
     ensure_dependencies
     ensure_env_files
     validate_web_env || echo "Fill web ad env values before production --quick."
+    warn_mobile_env
     echo "PM2 local version: $(npx --no-install pm2 --version 2>/dev/null || echo 'installed after npm install')"
     show_urls
     ;;
@@ -360,10 +466,18 @@ case "$TASK" in
     ensure_dependencies
     mobile_release_guidance
     ;;
+  mobile-build)
+    mobile_build
+    ;;
+  mobile-submit)
+    mobile_submit
+    ;;
+  mobile-publish)
+    mobile_publish
+    ;;
   both)
     full_build_checks
     start_web_production
-    mobile_release_guidance
     show_urls
     pm2_cmd status
     ;;
@@ -372,6 +486,10 @@ case "$TASK" in
     ;;
   quick)
     quick_deploy
+    ;;
+  all-quick)
+    quick_deploy
+    mobile_publish
     ;;
   urls)
     show_urls

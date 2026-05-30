@@ -1,11 +1,22 @@
-import { StyleSheet, View } from 'react-native';
-import { adUnitIds, BannerAd, BannerAdSize } from './adMob';
+import { StyleSheet, Text, View } from 'react-native';
+import { adUnitIds, getGoogleMobileAdsModule } from './adMob';
+import { theme } from '../theme';
 
-export const BannerAdSlot = () => (
-  <View style={styles.container}>
-    <BannerAd unitId={adUnitIds.banner} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} requestOptions={{ requestNonPersonalizedAdsOnly: true }} />
-  </View>
-);
+export const BannerAdSlot = () => {
+  const ads = getGoogleMobileAdsModule();
+  const BannerAd = ads?.BannerAd;
+  const bannerSize = ads?.BannerAdSize.ANCHORED_ADAPTIVE_BANNER;
+
+  return (
+    <View style={styles.container}>
+      {BannerAd && bannerSize ? (
+        <BannerAd unitId={adUnitIds.banner} size={bannerSize} requestOptions={{ requestNonPersonalizedAdsOnly: true }} />
+      ) : (
+        <Text style={styles.placeholder}>Ads disabled for mobile testing.</Text>
+      )}
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -13,5 +24,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+  },
+  placeholder: {
+    color: theme.colors.muted,
+    fontWeight: '800',
+    textAlign: 'center',
   },
 });
