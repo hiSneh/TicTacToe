@@ -52,8 +52,20 @@ const getLocalEntry = (entries: LocalScoreEntry[]) => {
 };
 
 const readCachedScores = async () => {
-  const cached = await AsyncStorage.getItem(scoreKey);
-  return cached ? (JSON.parse(cached) as LocalScoreEntry[]) : [];
+  try {
+    const cached = await AsyncStorage.getItem(scoreKey);
+    if (!cached) return [];
+    const parsed = JSON.parse(cached) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((entry): entry is LocalScoreEntry => {
+      if (!entry || typeof entry !== 'object') return false;
+      const candidate = entry as Partial<LocalScoreEntry>;
+      return typeof candidate.userId === 'string' && typeof candidate.name === 'string' && typeof candidate.score === 'number';
+    });
+  } catch {
+    await AsyncStorage.removeItem(scoreKey);
+    return [];
+  }
 };
 
 const writeCachedScores = async (entries: LocalScoreEntry[]) => {

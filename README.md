@@ -316,6 +316,267 @@ Phase 5 AdMob wiring is implemented for Expo mobile with `react-native-google-mo
 - Rewarded ads are wired on the Daily Rewards screen.
 - The Expo config plugin is registered in `apps/mobile/app.json` with Google test app IDs. Replace those app IDs with production AdMob app IDs before store builds.
 
+## Play Store Publishing Guide
+
+Use this flow to publish the Expo mobile app to Google Play.
+
+Current Android identity:
+
+- Play Store app name: `Neon TicTacToe Arena`
+- Android package name: `com.tictactoe.neonarena`
+- Expo slug: `neon-tictactoe-arena`
+- EAS production build output: Android App Bundle (`.aab`)
+
+Treat the Android package name as permanent once the app is created in Play Console. Google Play package names are unique and cannot be reused for a different app later.
+
+### 1. Prepare Accounts And Tools
+
+- Create or sign in to a Google Play Console developer account.
+- Create or sign in to an Expo account.
+- From the repo root, install dependencies:
+  ```bash
+  npm install
+  ```
+- Log in to EAS:
+  ```bash
+  npx eas login
+  ```
+- Confirm the mobile app type-checks:
+  ```bash
+  npm --workspace @tictactoe/mobile run build
+  ```
+
+### 2. Finalize App Configuration
+
+Review `apps/mobile/app.json` before the first store build:
+
+- Keep `expo.android.package` as `com.tictactoe.neonarena` unless you are intentionally creating a different Play Store app.
+- Set `expo.version` to the public app version you want users to see, for example `1.0.0`.
+- Add final icon and adaptive icon assets before release. The current config only defines colors.
+- Add a splash image if you want a branded splash screen. The current config only defines splash behavior and background color.
+- Replace the Google test AdMob app IDs in the `react-native-google-mobile-ads` plugin with production AdMob app IDs before enabling real ads:
+  ```json
+  {
+    "androidAppId": "ca-app-pub-xxxxxxxxxxxxxxxx~xxxxxxxxxx",
+    "iosAppId": "ca-app-pub-xxxxxxxxxxxxxxxx~xxxxxxxxxx"
+  }
+  ```
+
+The production EAS profile in `apps/mobile/eas.json` already uses:
+
+```json
+{
+  "production": {
+    "autoIncrement": true,
+    "android": {
+      "buildType": "app-bundle"
+    }
+  }
+}
+```
+
+That means production Android builds create `.aab` files and EAS increments the native Android version code for updates.
+
+### 3. Configure Production Secrets
+
+If AdMob is disabled, keep this in `apps/mobile/.env` or as an EAS secret:
+
+```env
+EXPO_PUBLIC_DISABLE_ADMOB=true
+```
+
+If AdMob is enabled for production, set:
+
+```env
+EXPO_PUBLIC_DISABLE_ADMOB=false
+EXPO_PUBLIC_ADMOB_BANNER_ANDROID=ca-app-pub-xxxxxxxxxxxxxxxx/xxxxxxxxxx
+EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID=ca-app-pub-xxxxxxxxxxxxxxxx/xxxxxxxxxx
+EXPO_PUBLIC_ADMOB_REWARDED_ANDROID=ca-app-pub-xxxxxxxxxxxxxxxx/xxxxxxxxxx
+```
+
+For EAS cloud builds, prefer EAS secrets over committing `.env` values:
+
+```bash
+npx eas secret:create --scope project --name EXPO_PUBLIC_DISABLE_ADMOB --value false
+npx eas secret:create --scope project --name EXPO_PUBLIC_ADMOB_BANNER_ANDROID --value ca-app-pub-xxxxxxxxxxxxxxxx/xxxxxxxxxx
+npx eas secret:create --scope project --name EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID --value ca-app-pub-xxxxxxxxxxxxxxxx/xxxxxxxxxx
+npx eas secret:create --scope project --name EXPO_PUBLIC_ADMOB_REWARDED_ANDROID --value ca-app-pub-xxxxxxxxxxxxxxxx/xxxxxxxxxx
+```
+
+### 4. Create The Play Console App
+
+In Play Console:
+
+- Select **Create app**.
+- App name: `Neon TicTacToe Arena`.
+- App type: **Game**.
+- Free or paid: choose carefully. A free app can usually remain free; switching from free to paid later is not the normal path.
+- Add the developer contact email.
+- Accept the Play App Signing and policy declarations.
+
+After creating the app, complete the dashboard setup tasks:
+
+- Main store listing.
+- App category and tags.
+- Contact details.
+- Privacy policy URL.
+- App access.
+- Ads declaration.
+- Content rating questionnaire.
+- Target audience and content.
+- Data safety form.
+- Government apps declaration, if shown.
+- Financial features declaration, if shown.
+- Health apps declaration, if shown.
+
+### 5. Prepare Store Listing Assets
+
+Prepare these assets before release:
+
+- App icon: final production icon from the app config.
+- Feature graphic: required by Play Store for many listings and promotions.
+- Phone screenshots: capture real gameplay screens from the Android build.
+- Optional tablet screenshots, if tablet support is enabled or desired.
+- Short description: maximum 80 characters.
+- Full description: maximum 4000 characters.
+- Support email and optional website.
+- Privacy policy page. This should describe local game data, local scoreboard/profile storage, ads if enabled, analytics if enabled, and any third-party SDKs.
+
+Suggested listing copy starter:
+
+```text
+Short description:
+Fast neon TicTacToe with solo, local, and tournament play.
+
+Full description:
+Play a polished neon TicTacToe arena with quick matches, difficulty options, local score tracking, tournament-style play, and daily rewards. Challenge the AI, pass the phone to a friend, and track your progress on the local leaderboard.
+```
+
+### 6. Complete Policy Forms Carefully
+
+Use the actual production build behavior when answering policy forms.
+
+- **Ads**: answer yes if AdMob is enabled or ad SDK code is active in the release.
+- **Data safety**: if AdMob is enabled, review Google Mobile Ads SDK disclosures and declare any data collection or sharing performed by the ads SDK. If only local profile, scores, and analytics cache are used, do not claim server-side account collection unless you add it later.
+- **App access**: select no special access required unless a future build adds login-gated content.
+- **Content rating**: complete the game questionnaire honestly. A standard TicTacToe game should usually be low-risk, but answer based on the final app content and ads.
+- **Target audience**: choose the intended age range. If targeting children, Play policies for ads, data, and content become stricter.
+- **Privacy policy**: required if ads, analytics SDKs, account features, or any personal/sensitive data collection is present.
+
+Keep the privacy policy, Data safety form, SDK behavior, and `apps/mobile/app.json` permissions aligned. Play review often fails when one of these describes different behavior than the others.
+
+### 7. Build The Android App Bundle
+
+From the repo root:
+
+```bash
+bash scripts/server.sh --mobile-build --platform=android --profile=production
+```
+
+Equivalent direct EAS command:
+
+```bash
+cd apps/mobile
+npx eas build --platform android --profile production
+```
+
+When the build completes, download the `.aab` from the EAS build page or copy the artifact URL printed by EAS.
+
+Before uploading to Play Console, install and test a preview build on a real device:
+
+```bash
+bash scripts/server.sh --mobile-local-apk --empty-ads
+```
+
+The local APK task runs the mobile type-check, validates app config, checks Android SDK/JDK and local signing, then creates a signed APK for easier device installation. Use it to check startup, navigation, gameplay, ads-disabled behavior, and any enabled ad placements before producing the final `.aab`.
+
+### 8. First Play Store Upload
+
+The first upload must be done manually in Play Console before automated EAS submissions can work.
+
+Recommended first track:
+
+- Use **Internal testing** for the first upload.
+- Create an internal tester list.
+- Create a new release.
+- Upload the production `.aab`.
+- Let Play Console run pre-launch and policy checks.
+- Fix any errors or warnings.
+- Roll out to internal testers.
+
+If the account is a personal Play Console account created after November 13, 2023, Google may require closed testing before production access. Follow the production access tasks shown in Play Console for that account.
+
+### 9. Production Release
+
+After internal or closed testing is accepted:
+
+- Go to the **Production** track.
+- Create a new release.
+- Select the tested app bundle or upload a newer production `.aab`.
+- Add release notes.
+- Review the release.
+- Start with a staged rollout if you want a cautious launch, for example 5%, 10%, 25%, 50%, then 100%.
+- Monitor crashes, ANRs, reviews, policy messages, and ad behavior after rollout.
+
+Release notes starter:
+
+```text
+Initial release of Neon TicTacToe Arena with quick matches, AI play, local multiplayer, tournaments, rewards, and local leaderboard tracking.
+```
+
+### 10. Configure EAS Submit For Later Updates
+
+After the first manual upload, EAS Submit can upload future builds.
+
+Create a Google Cloud service account for Play Developer API access, grant it access in Play Console, download its JSON key, and upload it to EAS credentials:
+
+```bash
+cd apps/mobile
+npx eas credentials --platform android
+```
+
+Choose the production profile, then upload the Google Service Account key when prompted.
+
+Submit the latest Android build:
+
+```bash
+cd apps/mobile
+npx eas submit --platform android --profile production --latest
+```
+
+Or use the repo helper:
+
+```bash
+bash scripts/server.sh --mobile-submit --platform=android --profile=production
+```
+
+Build and submit in one flow after credentials are ready:
+
+```bash
+bash scripts/server.sh --mobile-publish --platform=android --profile=production
+```
+
+### 11. Update Checklist
+
+For every Play Store update:
+
+- Increase `expo.version` for user-visible app version changes.
+- Let EAS `autoIncrement` increase Android `versionCode`.
+- Run:
+  ```bash
+  npm --workspace @tictactoe/mobile run build
+  ```
+- Build Android production:
+  ```bash
+  bash scripts/server.sh --mobile-build --platform=android --profile=production
+  ```
+- Test the build.
+- Submit:
+  ```bash
+  bash scripts/server.sh --mobile-submit --platform=android --profile=production
+  ```
+- Update Play Console policy forms if SDKs, ads, permissions, account behavior, links, or data usage changed.
+
 ## AdSense Setup Guide
 
 Phase 5 AdSense wiring is implemented for web.

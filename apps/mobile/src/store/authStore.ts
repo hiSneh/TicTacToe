@@ -38,14 +38,26 @@ const persistUser = async (user: LocalUser) => {
   await AsyncStorage.setItem(userKey, JSON.stringify(user));
 };
 
+const readCachedUser = async () => {
+  try {
+    const cached = await AsyncStorage.getItem(userKey);
+    if (!cached) return null;
+    const parsed = JSON.parse(cached) as Partial<LocalUser>;
+    if (!parsed.id || !parsed.name || typeof parsed.createdAt !== 'number') return null;
+    return parsed as LocalUser;
+  } catch {
+    await AsyncStorage.removeItem(userKey);
+    return null;
+  }
+};
+
 export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   ready: false,
   mode: 'local',
   start: () => {
     void (async () => {
-      const cached = await AsyncStorage.getItem(userKey);
-      const user = cached ? (JSON.parse(cached) as LocalUser) : createLocalUser();
+      const user = (await readCachedUser()) ?? createLocalUser();
       await persistUser(user);
       set({ user, ready: true });
       trackEvent('local_user_ready', { userId: user.id, platform: 'mobile' });

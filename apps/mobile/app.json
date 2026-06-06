@@ -9,7 +9,9 @@
       "backgroundColor": "#090b18",
       "resizeMode": "contain"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tictactoe.neonarena"
@@ -31,6 +33,11 @@
           "iosAppId": "ca-app-pub-3940256099942544~1458002511"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "39ecaddb-c84c-4826-8497-3ce1f905cf7b"
+      }
+    }
   }
 }
