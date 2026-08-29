@@ -1,15 +1,14 @@
 import { Platform } from 'react-native';
 import { trackEvent } from '../services/analytics';
 
-const env = (globalThis as typeof globalThis & { process?: { env?: Record<string, string | undefined> } }).process?.env ?? {};
-const adsDisabled = env.EXPO_PUBLIC_DISABLE_ADMOB !== 'false';
+const adsDisabled = process.env.EXPO_PUBLIC_DISABLE_ADMOB !== 'false';
 
-const androidInterstitialId = env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID;
-const iosInterstitialId = env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS;
-const androidRewardedId = env.EXPO_PUBLIC_ADMOB_REWARDED_ANDROID;
-const iosRewardedId = env.EXPO_PUBLIC_ADMOB_REWARDED_IOS;
-const androidBannerId = env.EXPO_PUBLIC_ADMOB_BANNER_ANDROID;
-const iosBannerId = env.EXPO_PUBLIC_ADMOB_BANNER_IOS;
+const androidInterstitialId = process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID;
+const iosInterstitialId = process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS;
+const androidRewardedId = process.env.EXPO_PUBLIC_ADMOB_REWARDED_ANDROID;
+const iosRewardedId = process.env.EXPO_PUBLIC_ADMOB_REWARDED_IOS;
+const androidBannerId = process.env.EXPO_PUBLIC_ADMOB_BANNER_ANDROID;
+const iosBannerId = process.env.EXPO_PUBLIC_ADMOB_BANNER_IOS;
 
 type ListenerCleanup = () => void;
 type AdInstance = {

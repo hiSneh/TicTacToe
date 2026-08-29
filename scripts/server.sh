@@ -334,14 +334,23 @@ warn_mobile_env() {
     echo "Skipping AdMob env validation because empty ads are allowed."
     return 0
   fi
-  local keys=(
-    EXPO_PUBLIC_ADMOB_BANNER_ANDROID
-    EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID
-    EXPO_PUBLIC_ADMOB_REWARDED_ANDROID
-    EXPO_PUBLIC_ADMOB_BANNER_IOS
-    EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS
-    EXPO_PUBLIC_ADMOB_REWARDED_IOS
-  )
+  local keys=()
+
+  if [[ "$MOBILE_PLATFORM" == "android" || "$MOBILE_PLATFORM" == "all" ]]; then
+    keys+=(
+      EXPO_PUBLIC_ADMOB_BANNER_ANDROID
+      EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID
+      EXPO_PUBLIC_ADMOB_REWARDED_ANDROID
+    )
+  fi
+
+  if [[ "$MOBILE_PLATFORM" == "ios" || "$MOBILE_PLATFORM" == "all" ]]; then
+    keys+=(
+      EXPO_PUBLIC_ADMOB_BANNER_IOS
+      EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS
+      EXPO_PUBLIC_ADMOB_REWARDED_IOS
+    )
+  fi
 
   for key in "${keys[@]}"; do
     if [[ -z "$(env_value "$mobile_env" "$key")" ]]; then
@@ -358,18 +367,27 @@ warn_mobile_env() {
 require_mobile_env() {
   local mobile_env="$ROOT/apps/mobile/.env"
   local missing=0
-  local keys=(
-    EXPO_PUBLIC_ADMOB_BANNER_ANDROID
-    EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID
-    EXPO_PUBLIC_ADMOB_REWARDED_ANDROID
-    EXPO_PUBLIC_ADMOB_BANNER_IOS
-    EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS
-    EXPO_PUBLIC_ADMOB_REWARDED_IOS
-  )
+  local keys=()
 
   if [[ "${ALLOW_EMPTY_ADS:-0}" == "1" || "$EMPTY_ADS" == "1" ]]; then
     echo "Skipping required AdMob env validation because empty ads are allowed."
     return 0
+  fi
+
+  if [[ "$MOBILE_PLATFORM" == "android" || "$MOBILE_PLATFORM" == "all" ]]; then
+    keys+=(
+      EXPO_PUBLIC_ADMOB_BANNER_ANDROID
+      EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID
+      EXPO_PUBLIC_ADMOB_REWARDED_ANDROID
+    )
+  fi
+
+  if [[ "$MOBILE_PLATFORM" == "ios" || "$MOBILE_PLATFORM" == "all" ]]; then
+    keys+=(
+      EXPO_PUBLIC_ADMOB_BANNER_IOS
+      EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS
+      EXPO_PUBLIC_ADMOB_REWARDED_IOS
+    )
   fi
 
   for key in "${keys[@]}"; do

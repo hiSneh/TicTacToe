@@ -20,7 +20,8 @@
       "adaptiveIcon": {
         "backgroundColor": "#090b18"
       },
-      "package": "com.tictactoe.neonarena"
+      "package": "com.tictactoe.neonarena",
+      "versionCode": 5
     },
     "web": {
       "bundler": "metro"
@@ -29,7 +30,7 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "androidAppId": "ca-app-pub-1401199365624353~1969118987",
           "iosAppId": "ca-app-pub-3940256099942544~1458002511"
         }
       ]
