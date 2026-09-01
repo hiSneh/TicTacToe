@@ -1,6 +1,6 @@
 {
   "name": "tictactoe-ecosystem",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "private": true,
   "description": "Cross-platform TicTacToe game ecosystem with React web and Expo mobile apps.",
   "packageManager": "npm@10.0.0",

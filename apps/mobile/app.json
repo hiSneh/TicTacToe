@@ -2,7 +2,7 @@
   "expo": {
     "name": "Neon TicTacToe Arena",
     "slug": "neon-tictactoe-arena",
-    "version": "0.1.0",
+    "version": "0.1.3",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "splash": {
@@ -18,10 +18,11 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#090b18"
+        "backgroundColor": "#090b18",
+        "foregroundImage": "./assets/adaptive-icon.png"
       },
       "package": "com.tictactoe.neonarena",
-      "versionCode": 5
+      "versionCode": 9
     },
     "web": {
       "bundler": "metro"
@@ -39,6 +40,7 @@
       "eas": {
         "projectId": "39ecaddb-c84c-4826-8497-3ce1f905cf7b"
       }
-    }
+    },
+    "icon": "./assets/icon.png"
   }
 }

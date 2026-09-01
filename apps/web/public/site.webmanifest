@@ -1,0 +1,21 @@
+{
+  "name": "Neon TicTacToe Arena",
+  "short_name": "Neon Arena",
+  "description": "A polished, installable TicTacToe game with classic, 4x4, timed, streak, and tournament modes.",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#090b18",
+  "background_color": "#090b18",
+  "display": "standalone",
+  "start_url": "/"
+}
